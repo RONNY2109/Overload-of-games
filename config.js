@@ -10,3 +10,4 @@ const MONGO_URI = process.env.NODE_ENV === 'production'
 
 
 module.exports = {PAGE_URL, MONGO_URI}
+//module.exports = {PAGE_URL}
