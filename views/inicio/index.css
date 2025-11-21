@@ -1,29 +1,4 @@
-/* index.css */
-
-.galeria {
-    display: grid;
-    /* Crea 4 columnas iguales */
-    grid-template-columns: repeat(4, 1fr); 
-    /* Espacio entre los cuadros */
-    gap: 20px; 
-    padding: 20px;
-    margin: 0 auto;
-    max-width: 1200px; /* Ancho máximo de la galería */
-}
-
-.cuadro {
-    background-color: #f0f0f0;
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-.cuadro img {
-    /* Hace que las imágenes ocupen todo el ancho del cuadro */
-    width: 100%;
-    /* Mantiene la proporción de la imagen y la recorta si es necesario */
-    aspect-ratio: 1 / 1; 
-    object-fit: cover;
-    border-radius: 5px;
+#shop-icon {
+   width: auto;
+    height: auto;
 }

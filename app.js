@@ -1,30 +1,132 @@
-const path = require('path');
-const express = require('express');
+const express = require("express");
+const mongoose = require("mongoose");
+require("dotenv").config();
+const path = require("path");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const morgan = require("morgan");
+
+const usersRouter = require("./controller/users");
+const loginRouter = require("./controller/login");
+const productRouter = require("./controller/product");
+//const logoutRouter = require("./controller/logout");
+//const todosRouter = require("./controller/todos");
+
+// 1. IMPORTAR MIDDLEWARES DE SEGURIDAD Y DE ROL
+const { userExtractor } = require("./middleware/auth"); // Asumo que es auth.js
+const { isAdmin } = require("./middleware/IsAdmin"); // Asumo que es isAdmin.js
+
+const { MONGO_URI } = require("./config");
+const productsRouter = require("./controller/product");
 const app = express();
-// Eliminamos: const API_URL = '...'; 
-// Eliminamos: la función async obtenerImagenDeApi() { ... } y su llamada final.
 
-// Middleware, Rutas Estáticas, y Rutas de API... (Todo esto se mantiene)
-app.use(express.json()); 
-app.use((req, res, next) => {
-    console.log(req.method, req.url);
-    next();
-});
+(async () => {
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log("Conectado a Mongo DB");
+  } catch (error) {
+    console.log(error);
+  }
+})();
 
-// --- RUTAS DE ARCHIVOS ESTÁTICOS (FRONTEND) ---
-app.use('/', express.static(path.resolve(__dirname, 'views', 'inicio')));
-// ... el resto de tus rutas estáticas...
-app.use('/img', express.static(path.resolve(__dirname, 'img'))); 
+// Middleware para parsear JSON y datos de formulario
+app.use(cors());
+app.use(express.json());
+app.use(cookieParser());
 
-// --- RUTAS DE API (BACKEND) ---
-app.post('/api/users', (req, res) => {
-    const { name, email, password } = req.body;
-    console.log('Nuevo usuario recibido:', { name, email });
-    res.status(201).json(`Usuario ${name} creado exitosamente.`);
-});
+//RUTAS FRONTEND NO PROTEGIDAS
+// Estas rutas estáticas no necesitan autenticación
+app.use('/', express.static(path.resolve('views', 'home')));
+app.use('/components', express.static(path.resolve('views','components')));
+app.use('/styles', express.static(path.resolve('views', 'styles')));
+app.use('/signup', express.static(path.resolve('views', 'singup')));
+app.use('/login', express.static(path.resolve('views', 'login')));
+app.use('/inicio', express.static(path.resolve('views', 'inicio')));
+app.use('/v_administrador', express.static(path.resolve('views', 'v_administrador')));
+app.use('/game_labs', express.static(path.resolve('views', 'game_labs')));
+app.use('/v_res', express.static(path.resolve('views', 'v_res')));
+app.use('/img', express.static(path.resolve('img')));
+app.use("/verify/:id/:token",express.static(path.resolve("views", "verify")))
+
+// --------------------------------------------------------------------------------------
+// 🛑 LÍNEA ELIMINADA: app.use('/v_administrador', express.static(path.resolve('views', 'v_administrador')));
+// --------------------------------------------------------------------------------------
+
+app.use(morgan("tiny"));
+
+// --------------------------------------------------------------------------------------
+// 🛡️ RUTA PROTEGIDA DEL ADMINISTRADOR
+// Esta ruta reemplaza a express.static y aplica la seguridad
+// --------------------------------------------------------------------------------------
+app.get(
+  "/v_administrador",
+  userExtractor, // 1. Verifica token y adjunta req.user
+  isAdmin, // 2. Verifica que req.user.IsAdmin sea true
+  (req, res) => {
+    // 3. Envía el archivo HTML solo si la verificación es exitosa
+    res.sendFile(path.resolve("views", "v_administrador", "index.html"));
+  }
+);
+// --------------------------------------------------------------------------------------
+
+//RUTAS BACKEND (APIs)
+app.use("/api/users", usersRouter);
+app.use("/api/login", loginRouter);
+app.use("/api/product", productRouter);
+//app.use("/api/logout", logoutRouter);
+//app.use("/api/todos", userExtractor, todosRouter);
+
+module.exports = app;
 
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
+// ------------------ Código original eliminado ------------------
 
-// Eliminamos la llamada final a obtenerImagenDeApi();
+// require('dotenv').config();
+// const path = require('path'); // <-- añadido
+// const express = require('express');
+// const app = express();
+// const usersRouter = require("./controller/users");
+// const loginRouter = require("./controller/login");
+// const { MONGO_URI } = require("./config");
+// const mongoose = require('mongoose');
+// app.use(express.json());
+
+// // simple logger para depuración
+
+// (async () => {
+//   try {
+//     // usar la variable correcta; fallback a MONGO_URI desde config
+//     await mongoose.connect(process.env.MONGO_URI || process.env.MONGO_URU_TEST || MONGO_URI);
+//     console.log('Conectado a la base de datos');
+//   } catch (error) {
+//     console.log(error);
+//   }
+// })();
+
+
+// app.use('/', express.static(path.resolve('views', 'home')));
+// app.use('/components', express.static(path.resolve('views','components')));
+// app.use('/styles', express.static(path.resolve('views', 'styles')));
+// app.use('/signup', express.static(path.resolve('views', 'singup')));
+// app.use('/login', express.static(path.resolve('views', 'login')));
+// app.use('/inicio', express.static(path.resolve('views', 'inicio')));
+// app.use('/v_administrador', express.static(path.resolve('views', 'v_administrador')));
+// app.use('/game_labs', express.static(path.resolve('views', 'game_labs')));
+// app.use('/img', express.static(path.resolve('img')));
+// app.use("/verify/:id/:token",express.static(path.resolve("views", "verify")))
+
+// // para verify con params, usar una ruta GET y enviar el archivo
+// // app.get('/verify/:id/:token', (req, res) => {
+// //   res.sendFile(path.resolve(__dirname, 'views', 'verify', 'index.html'));
+// // });
+
+// // rutas backend
+// app.use('/api/users', usersRouter);
+// app.use('/api/login', loginRouter)
+
+// const PORT = process.env.PORT || 3001;
+// app.listen(PORT, () => {
+//   console.log(`Servidor escuchando en el puerto ${PORT}`);
+// });
+
+// module.exports = app;
